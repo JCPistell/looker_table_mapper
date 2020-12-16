@@ -1,2 +1,3 @@
 looker.ini
 .tmp/
+*.json

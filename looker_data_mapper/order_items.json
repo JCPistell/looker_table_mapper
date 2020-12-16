@@ -1,1 +1,0 @@
-{"lookml_views": ["repeat_purchase_facts", "trailing_sales_snapshot", "user_order_product", "total_order_product", "order_items", "affinity"], "content": [{"dashboard_id": "1", "dashboard_title": "Overview", "dashboard_tiles": ["1_Order Counts", "4_Repeat Purchase Rate by Age", "5_Category by Distribution Center"]}]}

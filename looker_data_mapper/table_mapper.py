@@ -2,6 +2,9 @@ import looker_sdk
 import json
 import lookml
 import re
+import concurrent.futures
+from pathlib import Path
+from itertools import repeat
 
 
 def check_sql_table_name(view, table_name):
@@ -12,7 +15,6 @@ def check_sql_table_name(view, table_name):
         else:
             return False
     except (KeyError, SyntaxError):
-        print("no sql table found - moving on")
         return False
 
 
@@ -33,7 +35,6 @@ def check_derived_table(view, table_name):
         else:
             return False
     except (KeyError, SyntaxError):
-        print("no derived tables found - moving on")
         return False
 
 
@@ -58,7 +59,6 @@ def check_derived_table_ref(view):
             return False
 
     except (KeyError, SyntaxError):
-        print("no derived table found - moving on")
         return False
 
 
@@ -114,21 +114,19 @@ def fetch_views(table_name, proj):
 
     # Main loop complete - now we recurse through the deferred dict
 
-    print("deferred processing")
-    print(defer_dict)
     crawl_dt_ref_dict(defer_dict, view_list)
 
     return view_list
 
 
-def get_dashboards(instance=None):
+def get_dashboards(ini_file=None, instance=None):
     """Accepts an instance reference and pulls all relevant dashboard info via the Looker API.
     This info includes dashboard element info such as title and field data, which we can then
     use to determine which dashboards and dashboard elements reference a table of interest.
     Returns a list that can be used to compare to views of interest.
     """
 
-    sdk = looker_sdk.init31(section=instance)
+    sdk = looker_sdk.init31(config_file=ini_file, section=instance)
 
     # initialize an empty dict container that will hold the final returned objects
     dash_element_fields = []
@@ -146,7 +144,9 @@ def get_dashboards(instance=None):
             except AttributeError:
                 fields = elem.look.query.fields
 
-            elem_entry = {"id": elem.id, "title": elem.title, "fields": fields}
+            title = elem.title or elem.look.title
+
+            elem_entry = {"id": elem.id, "title": title, "fields": fields}
             dash_entry["elements"].append(elem_entry)
 
         dash_element_fields.append(dash_entry)
@@ -169,10 +169,10 @@ def get_table_refs(table, project, dashboards_list):
     for dashboard in dashboards_list:
         elem_list = []
         for elem in dashboard["elements"]:
-            print(elem)
+            # get a distinct list of just the views
             field_views = list(set([i.split(".")[0] for i in elem["fields"]]))
-            print(field_views)
 
+            # compare element query/look views to table views
             if any(item in views for item in field_views):
                 elem_list.append(f"{elem['id']}_{elem['title']}")
 
@@ -191,14 +191,19 @@ def get_table_refs(table, project, dashboards_list):
 
 def main(**kwargs):
     git_url = kwargs["git_url"]
-    table = kwargs["table"]
-    instance = kwargs.get("instance")
+    tables = kwargs["table"]
+    cwd = Path.cwd()
+    looker_instance = kwargs.get("looker_instance")
+    ini_file = kwargs.get("ini_file")
+
+    if ini_file:
+        parsed_ini_file = cwd.joinpath(ini_file)
+    else:
+        parsed_ini_file = None
 
     project = lookml.Project(git_url=git_url)
 
-    dashboards = get_dashboards(instance=instance)
-    get_table_refs(table, project, dashboards)
+    dashboards = get_dashboards(ini_file=parsed_ini_file, instance=looker_instance)
 
-
-if __name__ == "__main__":
-    main(git_url="git@github.com:JCPistell/partner_homepage_template.git", table="order_items")
+    with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+        pool.map(get_table_refs, tables, repeat(project), repeat(dashboards))
