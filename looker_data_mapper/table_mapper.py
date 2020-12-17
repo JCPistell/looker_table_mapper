@@ -43,7 +43,7 @@ def check_derived_table_ref(view):
     be appended to a list of views to check once the primary loop has completed.
     """
 
-    pattern_text = r"{.*\.SQL_TABLE_NAME}"
+    pattern_text = r"\${.*\.SQL_TABLE_NAME}"
     pattern = re.compile(pattern_text)
 
     try:
@@ -51,7 +51,7 @@ def check_derived_table_ref(view):
         matches = list(set(re.findall(pattern, str(dt.value))))
         if matches:
             # extract the view names
-            parsed_matches = [i.split(".")[0].replace("{", "") for i in matches]
+            parsed_matches = [i.split(".")[0].replace("${", "") for i in matches]
 
             # return the dict of the view with it's referenced view names
             return {view.name: parsed_matches}
@@ -119,14 +119,12 @@ def fetch_views(table_name, proj):
     return view_list
 
 
-def get_dashboards(ini_file=None, instance=None):
+def get_dashboards(sdk):
     """Accepts an instance reference and pulls all relevant dashboard info via the Looker API.
     This info includes dashboard element info such as title and field data, which we can then
     use to determine which dashboards and dashboard elements reference a table of interest.
     Returns a list that can be used to compare to views of interest.
     """
-
-    sdk = looker_sdk.init31(config_file=ini_file, section=instance)
 
     # initialize an empty dict container that will hold the final returned objects
     dash_element_fields = []
@@ -203,7 +201,8 @@ def main(**kwargs):
 
     project = lookml.Project(git_url=git_url)
 
-    dashboards = get_dashboards(ini_file=parsed_ini_file, instance=looker_instance)
+    sdk = looker_sdk.init31(config_file=parsed_ini_file, section=looker_instance)
+    dashboards = get_dashboards(sdk)
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
         pool.map(get_table_refs, tables, repeat(project), repeat(dashboards))
