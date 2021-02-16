@@ -141,9 +141,11 @@ def get_dashboards(sdk):
             if elem.type == "vis":
                 try:
                     fields = elem.query.fields
+                    print("found query type")
                 except AttributeError:
                     try:
                         fields = elem.look.query.fields
+                        print("found look type")
                     except AttributeError:
                         print(f"something went wrong with this dashboard element! {dash.id}")
                         continue
