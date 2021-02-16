@@ -62,6 +62,7 @@ class MockDashboardElement():
         self.title = title
         self.query = query
         self.look = look
+        self.type = "vis"
 
 
 class MockSDK():

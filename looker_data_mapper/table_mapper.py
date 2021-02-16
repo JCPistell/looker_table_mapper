@@ -138,10 +138,14 @@ def get_dashboards(sdk):
 
         for elem in elements:
             # element field info will either be in a query or a look. we try both
-            try:
-                fields = elem.query.fields
-            except AttributeError:
-                fields = elem.look.query.fields
+            if elem.type == "vis":
+                try:
+                    fields = elem.query.fields
+                except AttributeError:
+                    fields = elem.look.query.fields
+            else:
+                print("Not a vis type!")
+                continue
 
             title = elem.title or elem.look.title
 
