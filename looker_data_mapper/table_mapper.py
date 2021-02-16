@@ -134,9 +134,12 @@ def get_dashboards(sdk):
 
     for dash in dashboards:
         dash_entry = {"id": dash.id, "title": dash.title, "elements": []}
-        elements = sdk.dashboard_dashboard_elements(dash.id, fields="id, title, query, look")
+        elements = sdk.dashboard_dashboard_elements(dash.id, fields="id, title, query, look, type")
+        print(elements)
 
         for elem in elements:
+            print("made it into elem loop")
+            print(elem)
             # element field info will either be in a query or a look. we try both
             if elem.type == "vis":
                 try:
