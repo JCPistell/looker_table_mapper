@@ -135,17 +135,18 @@ def get_dashboards(sdk):
     for dash in dashboards:
         dash_entry = {"id": dash.id, "title": dash.title, "elements": []}
         elements = sdk.dashboard_dashboard_elements(dash.id, fields="id, title, query, look, type")
-        print(elements)
 
         for elem in elements:
-            print("made it into elem loop")
-            print(elem)
             # element field info will either be in a query or a look. we try both
             if elem.type == "vis":
                 try:
                     fields = elem.query.fields
                 except AttributeError:
-                    fields = elem.look.query.fields
+                    try:
+                        fields = elem.look.query.fields
+                    except AttributeError:
+                        print(f"something went wrong with this dashboard element! {dash.id}")
+                        continue
             else:
                 print("Not a vis type!")
                 continue
