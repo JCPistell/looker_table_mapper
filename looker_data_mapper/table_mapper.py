@@ -9,8 +9,9 @@ from itertools import repeat
 
 def check_sql_table_name(view, table_name):
     """Accepts a view object and a table name. Returns true if the view contains the table name."""
+    pattern = re.compile(table_name, re.IGNORECASE)
     try:
-        if view.sql_table_name.value == table_name:
+        if re.search(pattern, view.sql_table_name.value):
             return True
         else:
             return False
@@ -24,7 +25,7 @@ def check_derived_table(view, table_name):
     """
 
     # Check for table name in from or join clause
-    pattern_text = f"from {table_name}|join {table_name}"
+    pattern_text = f"from .*{table_name}|join {table_name}"
     pattern = re.compile(pattern_text, re.IGNORECASE)
 
     try:
